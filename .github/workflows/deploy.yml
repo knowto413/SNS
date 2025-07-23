@@ -30,22 +30,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Prepare for static export
-        run: |
-          # GitHub Pages用にAPIルートを一時的に移動
-          if [ -d "src/app/api" ]; then
-            mv src/app/api src/app/api.temp
-          fi
-      
-      - name: Build
-        run: NODE_ENV=production NEXT_PUBLIC_VERCEL_ENV=github npm run build
-      
-      - name: Restore API routes
-        run: |
-          # APIルートを復元
-          if [ -d "src/app/api.temp" ]; then
-            mv src/app/api.temp src/app/api
-          fi
+      - name: Build for GitHub Pages
+        run: ./build-static.sh
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
