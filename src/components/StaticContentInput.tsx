@@ -85,12 +85,48 @@ export default function StaticContentInput({
       let processedContent = content
       if (inputType === 'url') {
         try {
-          const response = await fetch(content)
-          if (!response.ok) {
-            throw new Error('URLからコンテンツを取得できませんでした')
+          // CORSエラーを回避するため、複数のプロキシサービスを試行
+          const corsProxies = [
+            'https://api.allorigins.win/get?url=',
+            'https://corsproxy.io/?',
+            'https://cors-anywhere.herokuapp.com/',
+            `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(content)}`
+          ]
+          
+          let html = ''
+          let success = false
+          
+          // 最初にalloriginsを試行（最も信頼性が高い）
+          try {
+            const response = await fetch(`${corsProxies[0]}${encodeURIComponent(content)}`)
+            if (response.ok) {
+              const data = await response.json()
+              html = data.contents
+              success = true
+            }
+          } catch (e) {
+            console.log('allorigins failed, trying next proxy')
           }
           
-          const html = await response.text()
+          // alloriginsが失敗した場合、他のプロキシを試行
+          if (!success) {
+            for (let i = 1; i < corsProxies.length && !success; i++) {
+              try {
+                const proxyUrl = i === 3 ? corsProxies[i] : `${corsProxies[i]}${encodeURIComponent(content)}`
+                const response = await fetch(proxyUrl)
+                if (response.ok) {
+                  html = await response.text()
+                  success = true
+                }
+              } catch (e) {
+                console.log(`Proxy ${i} failed, trying next`)
+              }
+            }
+          }
+          
+          if (!success || !html) {
+            throw new Error('URLからコンテンツを取得できませんでした')
+          }
           
           // 基本的なHTMLタグを除去してテキストを抽出
           processedContent = html
@@ -104,8 +140,18 @@ export default function StaticContentInput({
           processedContent = processedContent.length > 3000 
             ? processedContent.substring(0, 3000) + '...' 
             : processedContent
+            
+          if (!processedContent || processedContent.length < 10) {
+            throw new Error('URLから有効なコンテンツを抽出できませんでした')
+          }
         } catch (error) {
-          throw new Error('URLからコンテンツを抽出できませんでした。URLを確認してください。')
+          console.error('URL fetch error:', error)
+          throw new Error(`URLからコンテンツを抽出できませんでした。${error instanceof Error ? error.message : ''}
+          
+ヒント：
+• URLが正しいかご確認ください
+• 一部のサイトはコンテンツ取得を制限している場合があります
+• 代わりにテキストを直接コピー&ペーストしてください`)
         }
       }
 
@@ -406,6 +452,13 @@ SEO対策された読みやすく親しみやすいnote記事（画像プロン�
             🔧 この静的サイト版では、Gemini APIを直接ブラウザから呼び出しています
           </p>
         </div>
+        {inputType === 'url' && (
+          <div className="p-3 bg-orange-50 rounded-lg">
+            <p className="small-text text-orange-700">
+              🌐 URL取得：一部のサイトはアクセス制限があります。エラーが出る場合は、テキストを直接コピー&ペーストしてください
+            </p>
+          </div>
+        )}
         {!apiKey && (
           <div className="p-3 bg-yellow-50 rounded-lg">
             <p className="small-text text-yellow-700">
