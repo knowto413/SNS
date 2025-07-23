@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { RefreshCw } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { RefreshCw, Play, Pause } from 'lucide-react'
 
 interface ContentEditorProps {
   generatedContent: {
@@ -17,6 +17,51 @@ interface ContentEditorProps {
 export default function ContentEditor({ generatedContent, setGeneratedContent, originalContent, inputType }: ContentEditorProps) {
   const [activeTab, setActiveTab] = useState<'x' | 'instagram' | 'note'>('x')
   const [isRegenerating, setIsRegenerating] = useState<string | null>(null)
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true) // 初期状態で自動切り替えを有効
+  const [autoSwitchInterval, setAutoSwitchInterval] = useState<NodeJS.Timeout | null>(null)
+
+  const tabs = ['x', 'instagram', 'note'] as const
+
+  // 自動切り替え機能
+  useEffect(() => {
+    if (isAutoPlaying) {
+      const interval = setInterval(() => {
+        setActiveTab(current => {
+          const currentIndex = tabs.indexOf(current)
+          return tabs[(currentIndex + 1) % tabs.length]
+        })
+      }, 5000) // 5秒ごとに切り替え
+
+      setAutoSwitchInterval(interval)
+      return () => clearInterval(interval)
+    } else {
+      if (autoSwitchInterval) {
+        clearInterval(autoSwitchInterval)
+        setAutoSwitchInterval(null)
+      }
+    }
+  }, [isAutoPlaying])
+
+  // コンポーネントのクリーンアップ
+  useEffect(() => {
+    return () => {
+      if (autoSwitchInterval) {
+        clearInterval(autoSwitchInterval)
+      }
+    }
+  }, [autoSwitchInterval])
+
+  const handleTabClick = (tab: 'x' | 'instagram' | 'note') => {
+    setActiveTab(tab)
+    // 手動でタブを切り替えた場合は自動再生を一時停止
+    if (isAutoPlaying) {
+      setIsAutoPlaying(false)
+    }
+  }
+
+  const toggleAutoPlay = () => {
+    setIsAutoPlaying(!isAutoPlaying)
+  }
 
   const handleContentChange = (platform: 'x' | 'instagram' | 'note', value: string | string[]) => {
     setGeneratedContent({
@@ -73,29 +118,63 @@ export default function ContentEditor({ generatedContent, setGeneratedContent, o
 
   return (
     <div className="card p-6">
-      <h2 className="heading-3 mb-4">コンテンツ編集・プレビュー</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="heading-3">コンテンツ編集・プレビュー</h2>
+        <button
+          onClick={toggleAutoPlay}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            isAutoPlaying 
+              ? 'bg-blue-600 text-white hover:bg-blue-700' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          {isAutoPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          {isAutoPlaying ? '自動切替中' : '自動切替'}
+        </button>
+      </div>
       
       {/* Platform Tabs */}
       <div className="mb-6">
-        <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
+        <div className="flex gap-2 p-1 bg-gray-100 rounded-lg relative">
+          {/* Progress bar for auto-switching */}
+          {isAutoPlaying && (
+            <div 
+              className="absolute bottom-0 left-0 h-1 bg-blue-500 rounded-full transition-all duration-[5000ms] ease-linear"
+              style={{ 
+                width: '33.33%', 
+                transform: `translateX(${tabs.indexOf(activeTab) * 300}%)` 
+              }}
+            />
+          )}
           <button
-            onClick={() => setActiveTab('x')}
+            onClick={() => handleTabClick('x')}
             className={`tab-button flex-1 ${activeTab === 'x' ? 'active' : ''}`}
           >
             X (Twitter)
           </button>
           <button
-            onClick={() => setActiveTab('instagram')}
+            onClick={() => handleTabClick('instagram')}
             className={`tab-button flex-1 ${activeTab === 'instagram' ? 'active' : ''}`}
           >
             Instagram
           </button>
           <button
-            onClick={() => setActiveTab('note')}
+            onClick={() => handleTabClick('note')}
             className={`tab-button flex-1 ${activeTab === 'note' ? 'active' : ''}`}
           >
             note
           </button>
+        </div>
+        <div className="mt-2 text-center">
+          {isAutoPlaying ? (
+            <p className="small-text text-blue-600">
+              🔄 5秒ごとに自動切り替え中（手動切り替えで一時停止）
+            </p>
+          ) : (
+            <p className="small-text text-gray-500">
+              📱 自動切り替えをオンにすると、スクロール不要で全てのコンテンツを確認できます
+            </p>
+          )}
         </div>
       </div>
 
