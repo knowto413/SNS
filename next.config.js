@@ -1,14 +1,16 @@
 /** @type {import('next').NextConfig} */
+const isGitHubPages = process.env.NEXT_PUBLIC_VERCEL_ENV === 'github'
+
 const nextConfig = {
-  output: 'export',
-  trailingSlash: true,
-  basePath: process.env.NODE_ENV === 'production' ? '/kiji' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/kiji/' : '',
+  output: isGitHubPages ? 'export' : undefined,
+  trailingSlash: isGitHubPages,
+  basePath: isGitHubPages ? '/kiji' : '',
+  assetPrefix: isGitHubPages ? '/kiji/' : '',
   images: {
     unoptimized: true
   },
   env: {
-    STATIC_EXPORT: process.env.NODE_ENV === 'production' ? 'true' : 'false'
+    STATIC_EXPORT: isGitHubPages ? 'true' : 'false'
   }
 }
 
