@@ -4,8 +4,32 @@ import { useState } from 'react'
 import ContentInput from '@/components/ContentInput'
 import ContentEditor from '@/components/ContentEditor'
 import PostSettings from '@/components/PostSettings'
-import StaticAuthStatus from '@/components/StaticAuthStatus'
-import StaticPostingPanel from '@/components/StaticPostingPanel'
+import dynamic from 'next/dynamic'
+
+// 開発時とGitHub Pages静的サイト時で異なるコンポーネントを読み込み
+const AuthStatus = dynamic(
+  () => {
+    // GitHub Pages (静的サイト) の場合
+    if (typeof window !== 'undefined' && window.location.hostname.includes('github.io')) {
+      return import('@/components/StaticAuthStatus')
+    }
+    // 開発環境または他の環境の場合は静的コンポーネントを使用
+    return import('@/components/StaticAuthStatus')
+  },
+  { ssr: false }
+)
+
+const PostingPanel = dynamic(
+  () => {
+    // GitHub Pages (静的サイト) の場合
+    if (typeof window !== 'undefined' && window.location.hostname.includes('github.io')) {
+      return import('@/components/StaticPostingPanel')
+    }
+    // 開発環境または他の環境の場合は静的コンポーネントを使用
+    return import('@/components/StaticPostingPanel')
+  },
+  { ssr: false }
+)
 
 export default function Home() {
   const [inputType, setInputType] = useState<'url' | 'text'>('url')
@@ -23,7 +47,7 @@ export default function Home() {
         <header className="text-center mb-8">
           <div className="flex justify-between items-center mb-4">
             <div></div>
-            <StaticAuthStatus />
+            <AuthStatus />
           </div>
           <h1 className="heading-1 mb-2">生成記事自動投稿ツール</h1>
           <p className="body-text">AIを活用したSEO最適化記事生成・SNS投稿ツール</p>
@@ -48,7 +72,7 @@ export default function Home() {
                 inputType={inputType}
               />
               <PostSettings generatedContent={generatedContent} />
-              <StaticPostingPanel 
+              <PostingPanel 
                 title="生成されたコンテンツ"
                 content={generatedContent.note}
               />

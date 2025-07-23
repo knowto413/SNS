@@ -26,6 +26,14 @@ export default function ContentEditor({ generatedContent, setGeneratedContent, o
   }
 
   const regenerateContent = async (platform: 'x' | 'instagram' | 'note') => {
+    // APIキーをローカルストレージから取得
+    const apiKey = typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') : null
+    
+    if (!apiKey) {
+      alert('Gemini API キーが設定されていません。コンテンツ入力欄でAPIキーを設定してください。')
+      return
+    }
+
     setIsRegenerating(platform)
     
     try {
@@ -38,11 +46,13 @@ export default function ContentEditor({ generatedContent, setGeneratedContent, o
           content: originalContent,
           platform,
           inputType,
+          apiKey,
         }),
       })
 
       if (!response.ok) {
-        throw new Error('再生成に失敗しました')
+        const result = await response.json()
+        throw new Error(result.error || '再生成に失敗しました')
       }
 
       const result = await response.json()
@@ -50,12 +60,12 @@ export default function ContentEditor({ generatedContent, setGeneratedContent, o
       if (result.success) {
         setGeneratedContent({
           ...generatedContent,
-          [platform]: result.data[platform],
+          [platform]: result.data,
         })
       }
     } catch (error) {
       console.error('再生成エラー:', error)
-      alert('再生成に失敗しました。もう一度お試しください。')
+      alert(error instanceof Error ? error.message : '再生成に失敗しました。もう一度お試しください。')
     } finally {
       setIsRegenerating(null)
     }
