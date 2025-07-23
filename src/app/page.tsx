@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import ContentInput from '@/components/ContentInput'
 import ContentEditor from '@/components/ContentEditor'
 import PostSettings from '@/components/PostSettings'
 import dynamic from 'next/dynamic'
@@ -27,6 +26,19 @@ const PostingPanel = dynamic(
     }
     // 開発環境または他の環境の場合は静的コンポーネントを使用
     return import('@/components/StaticPostingPanel')
+  },
+  { ssr: false }
+)
+
+const ContentInput = dynamic(
+  () => {
+    // 静的エクスポート時 (GitHub Pages等) の場合
+    if (process.env.NEXT_PUBLIC_STATIC_EXPORT === 'true' || 
+        (typeof window !== 'undefined' && window.location.hostname.includes('github.io'))) {
+      return import('@/components/StaticContentInput')
+    }
+    // 開発環境または他の環境の場合は通常のコンポーネントを使用
+    return import('@/components/ContentInput')
   },
   { ssr: false }
 )

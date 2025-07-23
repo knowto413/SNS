@@ -10,7 +10,7 @@ const nextConfig = {
     unoptimized: true
   },
   env: {
-    STATIC_EXPORT: isGitHubPages ? 'true' : 'false'
+    NEXT_PUBLIC_STATIC_EXPORT: isGitHubPages ? 'true' : 'false'
   }
 }
 
