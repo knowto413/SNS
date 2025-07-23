@@ -4,6 +4,17 @@ import { useSession, signIn, signOut } from 'next-auth/react'
 import { User, LogOut, LogIn } from 'lucide-react'
 
 export default function AuthStatus() {
+  // For static export (GitHub Pages), show disabled state first
+  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production') {
+    return (
+      <div className="flex items-center space-x-2 text-sm text-gray-400">
+        <LogIn className="h-4 w-4" />
+        <span>認証機能（開発版のみ）</span>
+      </div>
+    )
+  }
+  
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const { data: session, status } = useSession()
 
   if (status === 'loading') {

@@ -10,9 +10,28 @@ interface PostingPanelProps {
 }
 
 export default function PostingPanel({ title, content }: PostingPanelProps) {
+  // For static export (GitHub Pages), show disabled state first
+  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production') {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold mb-4 flex items-center">
+          <Send className="h-5 w-5 mr-2" />
+          SNS投稿
+        </h3>
+        <div className="text-center p-6 text-gray-500">
+          <p>SNS投稿機能は開発版でのみ利用可能です</p>
+        </div>
+      </div>
+    )
+  }
+  
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const { data: session } = useSession()
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [isPosting, setIsPosting] = useState(false)
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [postingTo, setPostingTo] = useState<string | null>(null)
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [results, setResults] = useState<{ [key: string]: any }>({})
 
   const postToSNS = async (platform: string) => {

@@ -4,8 +4,8 @@ import { useState } from 'react'
 import ContentInput from '@/components/ContentInput'
 import ContentEditor from '@/components/ContentEditor'
 import PostSettings from '@/components/PostSettings'
-import AuthStatus from '@/components/AuthStatus'
-import PostingPanel from '@/components/PostingPanel'
+import StaticAuthStatus from '@/components/StaticAuthStatus'
+import StaticPostingPanel from '@/components/StaticPostingPanel'
 
 export default function Home() {
   const [inputType, setInputType] = useState<'url' | 'text'>('url')
@@ -23,7 +23,7 @@ export default function Home() {
         <header className="text-center mb-8">
           <div className="flex justify-between items-center mb-4">
             <div></div>
-            <AuthStatus />
+            <StaticAuthStatus />
           </div>
           <h1 className="heading-1 mb-2">生成記事自動投稿ツール</h1>
           <p className="body-text">AIを活用したSEO最適化記事生成・SNS投稿ツール</p>
@@ -48,7 +48,7 @@ export default function Home() {
                 inputType={inputType}
               />
               <PostSettings generatedContent={generatedContent} />
-              <PostingPanel 
+              <StaticPostingPanel 
                 title="生成されたコンテンツ"
                 content={generatedContent.note}
               />

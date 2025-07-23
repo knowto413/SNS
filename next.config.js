@@ -7,12 +7,9 @@ const nextConfig = {
   images: {
     unoptimized: true
   },
-  // Disable API routes for static export
-  ...(process.env.NODE_ENV === 'production' && {
-    experimental: {
-      missingSuspenseWithCSRBailout: false,
-    }
-  })
+  env: {
+    STATIC_EXPORT: process.env.NODE_ENV === 'production' ? 'true' : 'false'
+  }
 }
 
 module.exports = nextConfig
