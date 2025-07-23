@@ -84,75 +84,16 @@ export default function StaticContentInput({
       // URLからコンテンツを抽出する場合
       let processedContent = content
       if (inputType === 'url') {
-        try {
-          // CORSエラーを回避するため、複数のプロキシサービスを試行
-          const corsProxies = [
-            'https://api.allorigins.win/get?url=',
-            'https://corsproxy.io/?',
-            'https://cors-anywhere.herokuapp.com/',
-            `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(content)}`
-          ]
-          
-          let html = ''
-          let success = false
-          
-          // 最初にalloriginsを試行（最も信頼性が高い）
-          try {
-            const response = await fetch(`${corsProxies[0]}${encodeURIComponent(content)}`)
-            if (response.ok) {
-              const data = await response.json()
-              html = data.contents
-              success = true
-            }
-          } catch (e) {
-            console.log('allorigins failed, trying next proxy')
-          }
-          
-          // alloriginsが失敗した場合、他のプロキシを試行
-          if (!success) {
-            for (let i = 1; i < corsProxies.length && !success; i++) {
-              try {
-                const proxyUrl = i === 3 ? corsProxies[i] : `${corsProxies[i]}${encodeURIComponent(content)}`
-                const response = await fetch(proxyUrl)
-                if (response.ok) {
-                  html = await response.text()
-                  success = true
-                }
-              } catch (e) {
-                console.log(`Proxy ${i} failed, trying next`)
-              }
-            }
-          }
-          
-          if (!success || !html) {
-            throw new Error('URLからコンテンツを取得できませんでした')
-          }
-          
-          // 基本的なHTMLタグを除去してテキストを抽出
-          processedContent = html
-            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-            .replace(/<[^>]*>/g, '')
-            .replace(/\s+/g, ' ')
-            .trim()
-          
-          // 長すぎる場合は適切な長さに制限
-          processedContent = processedContent.length > 3000 
-            ? processedContent.substring(0, 3000) + '...' 
-            : processedContent
-            
-          if (!processedContent || processedContent.length < 10) {
-            throw new Error('URLから有効なコンテンツを抽出できませんでした')
-          }
-        } catch (error) {
-          console.error('URL fetch error:', error)
-          throw new Error(`URLからコンテンツを抽出できませんでした。${error instanceof Error ? error.message : ''}
-          
-ヒント：
-• URLが正しいかご確認ください
-• 一部のサイトはコンテンツ取得を制限している場合があります
-• 代わりにテキストを直接コピー&ペーストしてください`)
-        }
+        // 静的サイトでのURL取得は技術的制限があることをユーザーに説明
+        throw new Error(`静的サイトではURL取得に技術的制限があります。
+
+解決方法：
+1. 記事のURLを開く
+2. 記事の内容をコピー（Ctrl+A → Ctrl+C）
+3. 「テキスト入力」タブに切り替え
+4. コピーした内容をペースト（Ctrl+V）
+
+これにより、より確実にAI生成を実行できます。`)
       }
 
       // Gemini AIを初期化
@@ -375,16 +316,16 @@ SEO対策された読みやすく親しみやすいnote記事（画像プロン�
       <div className="mb-4">
         <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
           <button
-            onClick={() => setInputType('url')}
-            className={`tab-button flex-1 ${inputType === 'url' ? 'active' : ''}`}
-          >
-            URL入力
-          </button>
-          <button
             onClick={() => setInputType('text')}
             className={`tab-button flex-1 ${inputType === 'text' ? 'active' : ''}`}
           >
-            テキスト入力
+            📝 テキスト入力（推奨）
+          </button>
+          <button
+            onClick={() => setInputType('url')}
+            className={`tab-button flex-1 ${inputType === 'url' ? 'active' : ''} opacity-75`}
+          >
+            🌐 URL入力（制限あり）
           </button>
         </div>
       </div>
@@ -447,22 +388,22 @@ SEO対策された読みやすく親しみやすいnote記事（画像プロン�
             💡 より良い結果を得るために、具体的で詳細なコンテンツを入力してください
           </p>
         </div>
-        <div className="p-3 bg-purple-50 rounded-lg">
-          <p className="small-text text-purple-700">
-            🔧 この静的サイト版では、Gemini APIを直接ブラウザから呼び出しています
+        <div className="p-3 bg-indigo-50 rounded-lg">
+          <p className="small-text text-indigo-700">
+            📝 推奨：記事をコピー&ペーストして「テキスト入力」をご利用ください
           </p>
         </div>
         {inputType === 'url' && (
-          <div className="p-3 bg-orange-50 rounded-lg">
-            <p className="small-text text-orange-700">
-              🌐 URL取得：一部のサイトはアクセス制限があります。エラーが出る場合は、テキストを直接コピー&ペーストしてください
+          <div className="p-3 bg-red-50 rounded-lg">
+            <p className="small-text text-red-700">
+              ⚠️ 静的サイト版ではURL取得に制限があります。テキスト入力の使用を強く推奨します
             </p>
           </div>
         )}
         {!apiKey && (
           <div className="p-3 bg-yellow-50 rounded-lg">
             <p className="small-text text-yellow-700">
-              ⚠️ AI生成を開始するにはGemini API キーが必要です
+              🔑 AI生成を開始するにはGemini API キーが必要です
             </p>
           </div>
         )}

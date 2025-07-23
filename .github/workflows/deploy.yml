@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Make build script executable
+        run: chmod +x ./build-static.sh
+      
       - name: Build for GitHub Pages
         run: ./build-static.sh
       

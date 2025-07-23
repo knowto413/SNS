@@ -44,7 +44,7 @@ const ContentInput = dynamic(
 )
 
 export default function Home() {
-  const [inputType, setInputType] = useState<'url' | 'text'>('url')
+  const [inputType, setInputType] = useState<'url' | 'text'>('text')
   const [content, setContent] = useState('')
   const [generatedContent, setGeneratedContent] = useState<{
     x: string
