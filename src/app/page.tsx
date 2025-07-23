@@ -53,13 +53,14 @@ export default function Home() {
   } | null>(null)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50 w-full flex flex-col">
+      <div className="container-centered py-8 flex-1">
         {/* Header */}
-        <header className="text-center mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <div></div>
-            <AuthStatus />
+        <header className="text-center mb-8 w-full">
+          <div className="flex justify-center items-center mb-4 relative">
+            <div className="absolute right-0">
+              <AuthStatus />
+            </div>
           </div>
           <h1 className="heading-1 mb-2">生成記事自動投稿ツール</h1>
           <p className="body-text">AIを活用したSEO最適化記事生成・SNS投稿ツール</p>
