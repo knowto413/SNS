@@ -8,6 +8,11 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: '生成記事自動投稿ツール',
   description: 'AIを活用したSEO最適化記事生成・SNS投稿ツール',
+  icons: {
+    icon: '/SNS/favicon.ico',
+    shortcut: '/SNS/favicon.ico',
+    apple: '/SNS/favicon.ico',
+  },
 }
 
 export default function RootLayout({

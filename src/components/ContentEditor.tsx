@@ -8,19 +8,21 @@ interface ContentEditorProps {
     x: string
     instagram: string[]
     note: string
+    threads: string
+    html: string
   }
-  setGeneratedContent: (content: { x: string; instagram: string[]; note: string }) => void
+  setGeneratedContent: (content: { x: string; instagram: string[]; note: string; threads: string; html: string }) => void
   originalContent: string
   inputType: 'url' | 'text'
 }
 
 export default function ContentEditor({ generatedContent, setGeneratedContent, originalContent, inputType }: ContentEditorProps) {
-  const [activeTab, setActiveTab] = useState<'x' | 'instagram' | 'note'>('x')
+  const [activeTab, setActiveTab] = useState<'x' | 'instagram' | 'note' | 'threads' | 'html'>('x')
   const [isRegenerating, setIsRegenerating] = useState<string | null>(null)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true) // 初期状態で自動切り替えを有効
   const [autoSwitchInterval, setAutoSwitchInterval] = useState<NodeJS.Timeout | null>(null)
 
-  const tabs = ['x', 'instagram', 'note'] as const
+  const tabs = ['x', 'instagram', 'note', 'threads', 'html'] as const
 
   // 自動切り替え機能
   useEffect(() => {
@@ -30,7 +32,7 @@ export default function ContentEditor({ generatedContent, setGeneratedContent, o
           const currentIndex = tabs.indexOf(current)
           return tabs[(currentIndex + 1) % tabs.length]
         })
-      }, 5000) // 5秒ごとに切り替え
+      }, 3000) // 3秒ごとに切り替え
 
       setAutoSwitchInterval(interval)
       return () => clearInterval(interval)
@@ -51,7 +53,7 @@ export default function ContentEditor({ generatedContent, setGeneratedContent, o
     }
   }, [autoSwitchInterval])
 
-  const handleTabClick = (tab: 'x' | 'instagram' | 'note') => {
+  const handleTabClick = (tab: 'x' | 'instagram' | 'note' | 'threads' | 'html') => {
     setActiveTab(tab)
     // 手動でタブを切り替えた場合は自動再生を一時停止
     if (isAutoPlaying) {
@@ -63,14 +65,14 @@ export default function ContentEditor({ generatedContent, setGeneratedContent, o
     setIsAutoPlaying(!isAutoPlaying)
   }
 
-  const handleContentChange = (platform: 'x' | 'instagram' | 'note', value: string | string[]) => {
+  const handleContentChange = (platform: 'x' | 'instagram' | 'note' | 'threads' | 'html', value: string | string[]) => {
     setGeneratedContent({
       ...generatedContent,
       [platform]: value,
     })
   }
 
-  const regenerateContent = async (platform: 'x' | 'instagram' | 'note') => {
+  const regenerateContent = async (platform: 'x' | 'instagram' | 'note' | 'threads' | 'html') => {
     // APIキーをローカルストレージから取得
     const apiKey = typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') : null
     
@@ -139,10 +141,10 @@ export default function ContentEditor({ generatedContent, setGeneratedContent, o
           {/* Progress bar for auto-switching */}
           {isAutoPlaying && (
             <div 
-              className="absolute bottom-0 left-0 h-1 bg-blue-500 rounded-full transition-all duration-[5000ms] ease-linear"
+              className="absolute bottom-0 left-0 h-1 bg-blue-500 rounded-full transition-all duration-[3000ms] ease-linear"
               style={{ 
-                width: '33.33%', 
-                transform: `translateX(${tabs.indexOf(activeTab) * 300}%)` 
+                width: '20%', 
+                transform: `translateX(${tabs.indexOf(activeTab) * 500}%)` 
               }}
             />
           )}
@@ -164,11 +166,23 @@ export default function ContentEditor({ generatedContent, setGeneratedContent, o
           >
             note
           </button>
+          <button
+            onClick={() => handleTabClick('threads')}
+            className={`tab-button flex-1 ${activeTab === 'threads' ? 'active' : ''}`}
+          >
+            Threads
+          </button>
+          <button
+            onClick={() => handleTabClick('html')}
+            className={`tab-button flex-1 ${activeTab === 'html' ? 'active' : ''}`}
+          >
+            HTML
+          </button>
         </div>
         <div className="mt-2 text-center">
           {isAutoPlaying ? (
             <p className="small-text text-blue-600">
-              🔄 5秒ごとに自動切り替え中（手動切り替えで一時停止）
+              🔄 3秒ごとに自動切り替え中（手動切り替えで一時停止）
             </p>
           ) : (
             <p className="small-text text-gray-500">
@@ -284,6 +298,78 @@ export default function ContentEditor({ generatedContent, setGeneratedContent, o
             <div className="mt-2 p-3 bg-green-50 rounded-lg">
               <p className="small-text text-green-700">
                 ℹ️ Markdown記法（# 見出し、**太字**、- リストなど）が使用できます
+              </p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'threads' && (
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="body-text font-medium">Threads投稿内容</label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => regenerateContent('threads')}
+                  disabled={isRegenerating === 'threads'}
+                  className="flex items-center gap-1 px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw className={`h-3 w-3 ${isRegenerating === 'threads' ? 'animate-spin' : ''}`} />
+                  再生成
+                </button>
+                <span className={`small-text ${
+                  generatedContent.threads.length > 480 ? 'text-red-600' : 'text-gray-500'
+                }`}>
+                  {generatedContent.threads.length}/500
+                </span>
+              </div>
+            </div>
+            <textarea
+              value={generatedContent.threads}
+              onChange={(e) => handleContentChange('threads', e.target.value)}
+              maxLength={500}
+              rows={6}
+              className="input-field resize-none"
+              placeholder="Threads用の投稿内容..."
+            />
+          </div>
+        )}
+
+        {activeTab === 'html' && (
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="body-text font-medium">HTML記事内容</label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => regenerateContent('html')}
+                  disabled={isRegenerating === 'html'}
+                  className="flex items-center gap-1 px-2 py-1 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw className={`h-3 w-3 ${isRegenerating === 'html' ? 'animate-spin' : ''}`} />
+                  再生成
+                </button>
+                <span className="small-text text-gray-500">HTML形式</span>
+              </div>
+            </div>
+            <textarea
+              value={generatedContent.html}
+              onChange={(e) => handleContentChange('html', e.target.value)}
+              rows={15}
+              className="input-field resize-none font-mono text-xs"
+              placeholder="<!DOCTYPE html>
+<html lang='ja'>
+<head>
+  <meta charset='UTF-8'>
+  <title>記事タイトル</title>
+</head>
+<body>
+  <h1>記事タイトル</h1>
+  <p>記事内容...</p>
+</body>
+</html>"
+            />
+            <div className="mt-2 p-3 bg-orange-50 rounded-lg">
+              <p className="small-text text-orange-700">
+                ℹ️ 完全なHTML形式でブログ記事が生成されます
               </p>
             </div>
           </div>

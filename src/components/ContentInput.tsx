@@ -8,7 +8,7 @@ interface ContentInputProps {
   setInputType: (type: 'url' | 'text') => void
   content: string
   setContent: (content: string) => void
-  onGenerate: (generatedContent: { x: string; instagram: string[]; note: string }) => void
+  onGenerate: (generatedContent: { x: string; instagram: string[]; note: string; threads: string; html: string }) => void
 }
 
 export default function ContentInput({

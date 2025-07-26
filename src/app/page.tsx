@@ -50,6 +50,8 @@ export default function Home() {
     x: string
     instagram: string[]
     note: string
+    threads: string
+    html: string
   } | null>(null)
 
   return (

@@ -27,6 +27,15 @@ fi
 # .nojekyllファイルを作成
 touch out/.nojekyll
 
+# favicon.icoをコピー
+echo "🎨 Copying favicon.ico..."
+if [ -f "public/favicon.ico" ]; then
+    cp public/favicon.ico out/
+    echo "✅ favicon.ico copied successfully"
+else
+    echo "⚠️ Warning: public/favicon.ico not found"
+fi
+
 # index.htmlが存在するか確認
 if [ ! -f "out/index.html" ]; then
     echo "❌ Error: index.html not found in out directory"

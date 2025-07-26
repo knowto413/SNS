@@ -9,7 +9,7 @@ interface StaticContentInputProps {
   setInputType: (type: 'url' | 'text') => void
   content: string
   setContent: (content: string) => void
-  onGenerate: (generatedContent: { x: string; instagram: string[]; note: string }) => void
+  onGenerate: (generatedContent: { x: string; instagram: string[]; note: string; threads: string; html: string }) => void
 }
 
 export default function StaticContentInput({
@@ -224,16 +224,77 @@ ${processedContent}
 
 SEO対策された読みやすく親しみやすいnote記事（画像プロンプト含む）：`
 
+      // Threads用のコンテンツ生成
+      const threadsPrompt = `
+以下のコンテンツを元に、Threads投稿用の読みやすく親しみやすい文章を作成してください。
+
+【必須要件】
+- 500文字以内（厳守）
+- 中学生でも理解できる平易で親しみやすい表現
+- 読者との対話感を演出（「みなさん」「一緒に」「どう思いますか？」等）
+- 感情表現を自然に含める（「驚きました！」「感動しました」「気づかされました」等）
+- 適切な改行で読みやすさを向上
+- ハッシュタグを2-3個含める
+- 絵文字を適度に使用して親しみやすさを演出
+
+【文章構成】
+1. つかみ（共感・疑問・驚き）
+2. 核心内容（要点を分かりやすく）
+3. 感想・気づき
+4. 行動喚起やハッシュタグ
+
+元コンテンツ：
+${processedContent}
+
+読みやすく親しみやすいThreads投稿文：`
+
+      // HTML用のコンテンツ生成
+      const htmlPrompt = `
+以下のコンテンツを元に、完全なHTML形式のブログ記事を作成してください。
+
+【必須要件】
+- 完全なHTML5形式（DOCTYPE、head、body含む）
+- レスポンシブデザイン対応のCSS
+- SEO対策されたメタタグ
+- 読みやすいタイポグラフィ
+- 中学生でも理解できる平易で親しみやすい表現
+- 2000-3000文字程度の読み応えのある内容
+- 構造化されたマークアップ（見出し、段落、リスト等）
+
+【HTML構成】
+1. HTMLヘッダー（メタタグ、CSS等）
+2. 記事タイトル（H1）
+3. 導入部分
+4. 本文（複数のH2、H3見出しで構成）
+5. まとめ
+6. フッター
+
+【CSS要件】
+- レスポンシブデザイン
+- 読みやすいフォント設定
+- 適切な行間・余白
+- 美しい配色
+- モバイルファーストデザイン
+
+元コンテンツ：
+${processedContent}
+
+完全なHTML形式のブログ記事：`
+
       // 並列でAPIを呼び出し
-      const [xResult, instagramResult, noteResult] = await Promise.all([
+      const [xResult, instagramResult, noteResult, threadsResult, htmlResult] = await Promise.all([
         model.generateContent(xPrompt),
         model.generateContent(instagramPrompt),
-        model.generateContent(notePrompt)
+        model.generateContent(notePrompt),
+        model.generateContent(threadsPrompt),
+        model.generateContent(htmlPrompt)
       ])
 
       const xText = xResult.response.text()
       const instagramText = instagramResult.response.text()
       const noteText = noteResult.response.text()
+      const threadsText = threadsResult.response.text()
+      const htmlText = htmlResult.response.text()
 
       // Instagramのカルーセルを分割
       const instagramSlides = instagramText
@@ -250,7 +311,9 @@ SEO対策された読みやすく親しみやすいnote記事（画像プロン�
       onGenerate({
         x: xText,
         instagram: instagramSlides,
-        note: noteText
+        note: noteText,
+        threads: threadsText,
+        html: htmlText
       })
 
     } catch (error) {
