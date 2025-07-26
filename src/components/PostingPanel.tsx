@@ -10,20 +10,6 @@ interface PostingPanelProps {
 }
 
 export default function PostingPanel({ title, content }: PostingPanelProps) {
-  // For static export (GitHub Pages), show disabled state first
-  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production') {
-    return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center">
-          <Send className="h-5 w-5 mr-2" />
-          SNS投稿
-        </h3>
-        <div className="text-center p-6 text-gray-500">
-          <p>SNS投稿機能は開発版でのみ利用可能です</p>
-        </div>
-      </div>
-    )
-  }
   
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const { data: session } = useSession()
@@ -41,7 +27,7 @@ export default function PostingPanel({ title, content }: PostingPanelProps) {
     setPostingTo(platform)
 
     try {
-      // HTMLの場合は直接ダウンロード処理
+      // HTMLの場合は直接ダウンロード処理（静的サイトでも動作）
       if (platform === 'html') {
         const { HTMLService } = await import('@/lib/html')
         const htmlService = new HTMLService()
@@ -51,20 +37,28 @@ export default function PostingPanel({ title, content }: PostingPanelProps) {
           [platform]: { success: true, message: 'HTMLファイルをダウンロードしました' } 
         }))
       } else {
-        const response = await fetch('/api/post', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            platform,
-            content,
-            title,
-          }),
-        })
+        // 静的サイトの場合はAPIが利用できない旨を表示
+        if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production') {
+          setResults(prev => ({ 
+            ...prev, 
+            [platform]: { success: false, error: '静的サイトではSNS投稿APIが利用できません' } 
+          }))
+        } else {
+          const response = await fetch('/api/post', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              platform,
+              content,
+              title,
+            }),
+          })
 
-        const result = await response.json()
-        setResults(prev => ({ ...prev, [platform]: result }))
+          const result = await response.json()
+          setResults(prev => ({ ...prev, [platform]: result }))
+        }
       }
     } catch (error) {
       console.error('投稿エラー:', error)
@@ -78,34 +72,36 @@ export default function PostingPanel({ title, content }: PostingPanelProps) {
     }
   }
 
+  const isStaticSite = process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production'
+  
   const platforms = [
     { 
       id: 'twitter', 
       name: 'X (Twitter)', 
       icon: X, 
       color: 'bg-black hover:bg-gray-800',
-      available: session?.provider === 'twitter'
+      available: !isStaticSite && session?.provider === 'twitter'
     },
     { 
       id: 'note', 
       name: 'note', 
       icon: FileText, 
       color: 'bg-green-600 hover:bg-green-700',
-      available: true
+      available: !isStaticSite
     },
     { 
       id: 'threads', 
       name: 'Threads', 
       icon: MessageCircle, 
       color: 'bg-purple-600 hover:bg-purple-700',
-      available: true
+      available: !isStaticSite
     },
     { 
       id: 'html', 
       name: 'HTML', 
       icon: Download, 
       color: 'bg-blue-600 hover:bg-blue-700',
-      available: true
+      available: true  // HTMLダウンロードは静的サイトでも利用可能
     },
   ]
 
@@ -166,10 +162,19 @@ export default function PostingPanel({ title, content }: PostingPanelProps) {
           </div>
 
           <div className="text-xs text-gray-500 mt-4">
-            <p>• X: @knowto413 にツイート投稿</p>
-            <p>• note: https://note.com/knowto413 に記事投稿</p>
-            <p>• Threads: Meta Threadsに投稿</p>
-            <p>• HTML: HTMLファイルとしてダウンロード</p>
+            {isStaticSite ? (
+              <>
+                <p>• HTML: HTMLファイルとしてダウンロード（利用可能）</p>
+                <p>• その他のSNS投稿機能は開発環境でのみ利用可能です</p>
+              </>
+            ) : (
+              <>
+                <p>• X: @knowto413 にツイート投稿</p>
+                <p>• note: https://note.com/knowto413 に記事投稿</p>
+                <p>• Threads: Meta Threadsに投稿</p>
+                <p>• HTML: HTMLファイルとしてダウンロード</p>
+              </>
+            )}
           </div>
         </div>
       )}
