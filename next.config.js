@@ -10,7 +10,12 @@ const nextConfig = {
     unoptimized: true
   },
   env: {
-    NEXT_PUBLIC_STATIC_EXPORT: isGitHubPages ? 'true' : 'false'
+    NEXT_PUBLIC_STATIC_EXPORT: isGitHubPages ? 'true' : 'false',
+    NEXT_PUBLIC_BUILD_ID: Date.now().toString()
+  },
+  // キャッシュを無効化
+  generateBuildId: async () => {
+    return Date.now().toString()
   }
 }
 
