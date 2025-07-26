@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { Send, X, Instagram, FileText, Loader2 } from 'lucide-react'
+import { Send, X, FileText, MessageCircle, Download, Loader2 } from 'lucide-react'
 
 interface PostingPanelProps {
   title: string
@@ -41,20 +41,31 @@ export default function PostingPanel({ title, content }: PostingPanelProps) {
     setPostingTo(platform)
 
     try {
-      const response = await fetch('/api/post', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          platform,
-          content,
-          title,
-        }),
-      })
+      // HTMLの場合は直接ダウンロード処理
+      if (platform === 'html') {
+        const { HTMLService } = await import('@/lib/html')
+        const htmlService = new HTMLService()
+        await htmlService.downloadHTML(title, content)
+        setResults(prev => ({ 
+          ...prev, 
+          [platform]: { success: true, message: 'HTMLファイルをダウンロードしました' } 
+        }))
+      } else {
+        const response = await fetch('/api/post', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            platform,
+            content,
+            title,
+          }),
+        })
 
-      const result = await response.json()
-      setResults(prev => ({ ...prev, [platform]: result }))
+        const result = await response.json()
+        setResults(prev => ({ ...prev, [platform]: result }))
+      }
     } catch (error) {
       console.error('投稿エラー:', error)
       setResults(prev => ({ 
@@ -76,17 +87,24 @@ export default function PostingPanel({ title, content }: PostingPanelProps) {
       available: session?.provider === 'twitter'
     },
     { 
-      id: 'instagram', 
-      name: 'Instagram', 
-      icon: Instagram, 
-      color: 'bg-pink-600 hover:bg-pink-700',
-      available: true
-    },
-    { 
       id: 'note', 
       name: 'note', 
       icon: FileText, 
       color: 'bg-green-600 hover:bg-green-700',
+      available: true
+    },
+    { 
+      id: 'threads', 
+      name: 'Threads', 
+      icon: MessageCircle, 
+      color: 'bg-purple-600 hover:bg-purple-700',
+      available: true
+    },
+    { 
+      id: 'html', 
+      name: 'HTML', 
+      icon: Download, 
+      color: 'bg-blue-600 hover:bg-blue-700',
       available: true
     },
   ]
@@ -106,7 +124,7 @@ export default function PostingPanel({ title, content }: PostingPanelProps) {
 
       {session && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {platforms.map((platform) => {
               const Icon = platform.icon
               const result = results[platform.id]
@@ -149,8 +167,9 @@ export default function PostingPanel({ title, content }: PostingPanelProps) {
 
           <div className="text-xs text-gray-500 mt-4">
             <p>• X: @knowto413 にツイート投稿</p>
-            <p>• Instagram: knowtomoney にカルーセル投稿</p>
             <p>• note: https://note.com/knowto413 に記事投稿</p>
+            <p>• Threads: Meta Threadsに投稿</p>
+            <p>• HTML: HTMLファイルとしてダウンロード</p>
           </div>
         </div>
       )}
