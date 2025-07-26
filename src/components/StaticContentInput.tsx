@@ -68,6 +68,27 @@ export default function StaticContentInput({
     return true
   }
 
+  // レート制限に対するリトライ機能
+  const retryWithDelay = async (fn: () => Promise<any>, maxRetries = 3, baseDelay = 1000) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn()
+      } catch (error: any) {
+        const isRateLimit = error?.message?.includes('429') || 
+                           error?.message?.includes('quota') || 
+                           error?.message?.includes('rate limit')
+        
+        if (isRateLimit && attempt < maxRetries) {
+          const delay = baseDelay * Math.pow(2, attempt - 1) // 指数バックオフ
+          console.log(`Rate limit hit, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+        } else {
+          throw error
+        }
+      }
+    }
+  }
+
   const handleGenerate = async () => {
     if (!content.trim()) {
       alert('コンテンツを入力してください')
@@ -372,13 +393,13 @@ ${processedContent}
 
 完全なHTML形式のブログ記事：`
 
-      // 並列でAPIを呼び出し
+      // 並列でAPIを呼び出し（リトライ機能付き）
       const [xResult, instagramResult, noteResult, threadsResult, htmlResult] = await Promise.all([
-        model.generateContent(xPrompt),
-        model.generateContent(instagramPrompt),
-        model.generateContent(notePrompt),
-        model.generateContent(threadsPrompt),
-        model.generateContent(htmlPrompt)
+        retryWithDelay(() => model.generateContent(xPrompt)),
+        retryWithDelay(() => model.generateContent(instagramPrompt)),
+        retryWithDelay(() => model.generateContent(notePrompt)),
+        retryWithDelay(() => model.generateContent(threadsPrompt)),
+        retryWithDelay(() => model.generateContent(htmlPrompt))
       ])
 
       const xText = xResult.response.text()
@@ -390,8 +411,8 @@ ${processedContent}
       // Instagramのカルーセルを分割
       const instagramSlides = instagramText
         .split('---')
-        .map(slide => slide.trim())
-        .filter(slide => slide.length > 0)
+        .map((slide: string) => slide.trim())
+        .filter((slide: string) => slide.length > 0)
         .slice(0, 10) // 最大10枚
 
       // 10枚に満たない場合は追加
@@ -409,11 +430,30 @@ ${processedContent}
 
     } catch (error) {
       console.error('Content generation error:', error)
-      alert(
-        error instanceof Error 
+      
+      const errorMessage = error instanceof Error ? error.message : ''
+      
+      let userMessage = ''
+      if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
+        userMessage = `⚠️ API利用制限に達しました
+
+Gemini APIの無料プランでは1日あたり50回のリクエスト制限があります。
+
+解決方法：
+• 24時間待ってから再度お試しください
+• より多くのリクエストが必要な場合は、Google AI Studioで有料プランにアップグレードしてください
+• 生成済みのコンテンツは保存されているので、編集して活用できます
+
+参考: https://ai.google.dev/gemini-api/docs/rate-limits`
+      } else if (errorMessage.includes('API key')) {
+        userMessage = 'APIキーが無効です。正しいGemini APIキーを設定してください。'
+      } else {
+        userMessage = error instanceof Error 
           ? error.message 
           : 'コンテンツの生成中にエラーが発生しました。しばらく待ってから再度お試しください。'
-      )
+      }
+      
+      alert(userMessage)
     } finally {
       setLoading(false)
     }
@@ -561,6 +601,11 @@ ${processedContent}
             </p>
           </div>
         )}
+        <div className="p-3 bg-amber-50 rounded-lg">
+          <p className="small-text text-amber-700">
+            ⚠️ <strong>利用制限について:</strong> Gemini APIの無料プランでは1日あたり50回のリクエスト制限があります。制限に達した場合は24時間後に再度お試しください。
+          </p>
+        </div>
       </div>
     </div>
   )

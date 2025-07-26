@@ -72,6 +72,27 @@ export default function ContentEditor({ generatedContent, setGeneratedContent, o
     })
   }
 
+  // レート制限に対するリトライ機能
+  const retryWithDelay = async (fn: () => Promise<any>, maxRetries = 3, baseDelay = 1000) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn()
+      } catch (error: any) {
+        const isRateLimit = error?.message?.includes('429') || 
+                           error?.message?.includes('quota') || 
+                           error?.message?.includes('rate limit')
+        
+        if (isRateLimit && attempt < maxRetries) {
+          const delay = baseDelay * Math.pow(2, attempt - 1) // 指数バックオフ
+          console.log(`Rate limit hit, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+        } else {
+          throw error
+        }
+      }
+    }
+  }
+
   const regenerateContent = async (platform: 'x' | 'instagram' | 'note' | 'threads' | 'html') => {
     // APIキーをローカルストレージから取得
     const apiKey = typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') : null
@@ -309,15 +330,15 @@ ${originalContent}
 完全なHTML形式のブログ記事：`
       }
 
-      const result = await model.generateContent(prompt)
+      const result = await retryWithDelay(() => model.generateContent(prompt))
       const generatedText = result.response.text()
 
       if (platform === 'instagram') {
         // Instagramのカルーセルを分割
         const instagramSlides = generatedText
           .split('---')
-          .map(slide => slide.trim())
-          .filter(slide => slide.length > 0)
+          .map((slide: string) => slide.trim())
+          .filter((slide: string) => slide.length > 0)
           .slice(0, 10) // 最大10枚
 
         // 10枚に満たない場合は追加
@@ -337,11 +358,30 @@ ${originalContent}
       }
     } catch (error) {
       console.error('再生成エラー:', error)
-      alert(
-        error instanceof Error 
+      
+      const errorMessage = error instanceof Error ? error.message : ''
+      
+      let userMessage = ''
+      if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
+        userMessage = `⚠️ API利用制限に達しました
+
+Gemini APIの無料プランでは1日あたり50回のリクエスト制限があります。
+
+解決方法：
+• 24時間待ってから再度お試しください
+• より多くのリクエストが必要な場合は、Google AI Studioで有料プランにアップグレードしてください
+• 現在のコンテンツを手動で編集して活用できます
+
+参考: https://ai.google.dev/gemini-api/docs/rate-limits`
+      } else if (errorMessage.includes('API key')) {
+        userMessage = 'APIキーが無効です。正しいGemini APIキーを設定してください。'
+      } else {
+        userMessage = error instanceof Error 
           ? error.message 
           : '再生成に失敗しました。しばらく待ってから再度お試しください。'
-      )
+      }
+      
+      alert(userMessage)
     } finally {
       setIsRegenerating(null)
     }
